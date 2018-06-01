@@ -2,30 +2,26 @@ require 'syslog/logger'
 require 'json'
 require 'httparty'
 require 'pp'
+require 'cgi'
 
 
-class Github
+class Gitlab
 	include HTTParty
 
 	format :json
 	# debug_output $stdout
-	base_uri = 'https://www.github.com/'
+	base_uri = 'https://gitlab.com/api/v4/'
 
-	def initialize(github_url, username, token)
-		@base_uri = github_url
-		# @username = username
-		# @password = password
-		@token = token
+
+
+	def initialize(gitlab_url='https://gitlab.com/api/v4/', token)
+		@base_uri = gitlab_url
+		@token = token 
 
 		@options = {
-			basic_auth: {
-				username: username,
-				password: token
-			},
 			headers: {
 				'Content-Type' => 'application/json',
-				# 'Authorization' => "token #{token}",
-				'User-Agent' => 'Github-Gatherer'
+				'PRIVATE-TOKEN' => "#{token}"
 			},
 			# TODO Make this more secure
 			verify: false
@@ -36,29 +32,17 @@ class Github
 		puts self.class.get("#{@base_uri}user", @options)
 	end
 
-	def get_issues(repo)
-		self.class.get("#{@base_uri}repos/#{repo}/issues", @options)
-	end
+	def get_issues(repo='gitlab-org/gitlab-mattermost')
+		project_id = CGI.escape(repo)
 
-	def get_pulls(repo, pull_state='open')
-		self.class.get("#{@base_uri}repos/#{repo}/pulls?state=#{pull_state}", @options)
+		before = (Time.now - (86400 * 7)).strftime('%Y-%m-%d')
+
+		self.class.get("#{@base_uri}/projects/#{project_id}/issues?state=opened&updated_before=#{before}", @options)
 	end
 
 	def get_repo(repo)
 		self.class.get("#{@base_uri}repos/#{repo}")
 	end
-
-	def get_org_members(org='mattermost')
-		members = self.class.get("#{@base_uri}orgs/#{org}/members", @options)
-		members_array = Array.new
-
-		members.each do |member|
-			members_array.push(member['login'])
-		end
-
-		members_array
-	end
-
 
 	def format_repo_output(repos_output)
 		output_array = Array.new
@@ -85,4 +69,9 @@ class Github
 
 		output_array
 	end
+
 end
+
+# gl = Gitlab.new()
+
+# pp gl.get_issues
