@@ -4,7 +4,7 @@ require 'syslog/logger'
 require 'yaml'
 require 'pp'
 require './lib/github.rb'
-require './lib/mattermost.rb'
+require './lib/mattermost_api.rb'
 require './lib/stackoverflow.rb'
 require './lib/gitlab.rb'
 require 'relative_time'
@@ -13,11 +13,18 @@ $config = YAML.load(
 	File.open('conf.yaml').read
 )
 
+mm = MattermostApi.new($config['mattermost_api']['url'],
+					   $config['mattermost_api']['username'],
+					   $config['mattermost_api']['password'])
+
 gh = Github.new($config['github_api']['url'], 
 				$config['github_api']['username'], 
 				$config['github_api']['token'])
 
+mattermost_recipient = $config['mattermost_api']['recipient']
+
 # Only issues not created by Mattermost staff
+
 
 org_members = gh.get_org_members()
 output_array = Array.new
@@ -31,9 +38,7 @@ repos = ['mattermost/mattermost-server',
 		 'mattermost/mattermost-push-proxy']
 
 # repos = []
-
 repos_output = Array.new
-
 
 repos.each do |repo|
 	# TODO: output the repo name
@@ -49,14 +54,15 @@ repos.each do |repo|
 			end
 		end
 	end
-	pp filtered_issues
+	# pp filtered_issues
 	
 	# TODO: Remove to cover all repos
 	repos_output.push({'repo' => repo_info, 'issues' => filtered_issues})
 	# break
 end
 
-output_array += gh.format_repo_output(repos_output)
+output_array = gh.format_repo_output(repos_output)
+mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
 
 # These are for pull requests to the Android and iOS apps
 # Only find ones >30 days
@@ -88,7 +94,8 @@ repos.each do |repo|
 	repos_output.push({'repo' => repo_info, 'issues' => old_pulls})
 	# break
 end
-output_array += gh.format_repo_output(repos_output)
+output_array = gh.format_repo_output(repos_output)
+mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
 
 # Stack Overflow
 so = StackOverflow.new
@@ -101,42 +108,38 @@ questions['items'].each do |question|
 	end
 end
 
-output_array += so.format_question_output(filtered_questions)
+output_array = so.format_question_output(filtered_questions)
+mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
 
 gl = Gitlab.new($config['gitlab_api']['url'], $config['gitlab_api']['token'])
+gitlab_repos_output = Array.new
+gitlab_repos = ['gitlab-org/gitlab-mattermost',
+				'gitlab-org/omnibus-gitlab?label_name=Mattermost',
+				'gitlab-org/gitlab-ce?label_name=mattermost']
 
-gitlab_repos = ['gitlab-org/gitlab-mattermost/issues',
-				'gitlab-org/omnibus-gitlab/issues?label_name=Mattermost',
-				'gitlab-org/gitlab-ce/issues?label_name=mattermost']
+gitlab_repos.each do |repo|
+	# TODO: output the repo name
+	repo_info = nil
+	issues = gl.get_issues(repo)
 
-gitlab_issues = gl.get_issues()
+	filtered_issues = Array.new
+	issues.each do |issue|
+		# Because Gitlab makes you get the project info from the ID
+		if repo_info.nil?
+			repo_info = gl.get_repo(issue['project_id'])
+		end
 
-pp gitlab_issues
-filtered_gitlab_issues = Array.new
-
-gitlab_issues.each do |issue|
-	if Time.now - Time.parse(issue['updated_at']) > (7 * 3600 * 24)
-		filtered_gitlab_issues.push(issue)
+		if Time.now - Time.parse(issue['updated_at']) > (7 * 3600 * 24)
+			filtered_issues.push(issue)
+		end
 	end
-end
-
-filtered_gitlab_issues.each do |issue|
+	# pp filtered_issues
 	
+	# TODO: Remove to cover all repos
+	gitlab_repos_output.push({'repo' => repo_info, 'issues' => filtered_issues})
 end
 
+# pp gitlab_repos_output
 
-# Finally, need to get these: https://gitlab.com/search?utf8=%E2%9C%93&search=mattermost&group_id=&project_id=20699&scope=issues&repository_ref=
-
-if output_array.count > 0
-	# Sends output to Mattermost
-	mm = Mattermost.new($config['mattermost_api']['url'])
-
-	# Post it to the channel
-	mm_post = {
-		:channel => 'town-square',
-		:username => 'Alice Evans',
-		:text => '### GitHub, StackOverflow & GitLab issues with activity older than 7 days:' + "\n" + output_array.join("\n")
-	}
-
-	mm.send_message(mm_post)	
-end
+output_array = gl.format_repo_output(gitlab_repos_output)
+mm.send_direct_message(mattermost_recipient, output_array.join("\n"))

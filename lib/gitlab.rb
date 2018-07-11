@@ -33,21 +33,34 @@ class Gitlab
 	end
 
 	def get_issues(repo='gitlab-org/gitlab-mattermost')
+		url_params = ''
+		if repo.include? '?'
+			repo, url_params = repo.split('?')
+		end
+
+
 		project_id = CGI.escape(repo)
 
 		before = (Time.now - (86400 * 7)).strftime('%Y-%m-%d')
+
+		if !url_params.nil?
+			before += "&#{url_params}"
+		end
 
 		self.class.get("#{@base_uri}/projects/#{project_id}/issues?state=opened&updated_before=#{before}", @options)
 	end
 
 	def get_repo(repo)
-		self.class.get("#{@base_uri}repos/#{repo}")
+		self.class.get("#{@base_uri}projects/#{repo}")
 	end
 
 	def format_repo_output(repos_output)
+
 		output_array = Array.new
 		repos_output.each do |repo|
+			
 			next if repo['issues'].count == 0
+
 
 			output = "### #{repo['repo']['name']} (#{repo['issues'].count}"
 
