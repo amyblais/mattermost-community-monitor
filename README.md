@@ -10,15 +10,15 @@ Because this uses standard HTTP requests you can run it from any machine that's 
 2. Run `bundle` to install required Ruby gems
 3. Copy `sample.conf.yaml` to `conf.yaml` and add the correct configuration values
 
-Now you can run the script manually with `./get_issues.rb` or by adding this crontab entry to run this every week on Wednesday:
+Now you can run the script manually with `./main.rb` or by adding this crontab entry to run this every week on Wednesday:
 
 ```
-0 9 * * 2 /path/to/get_issues.rb
+0 9 * * 2 /path/to/main.rb
 ```
 
 ## How it works
 
-For each repository in each group the `get_issues.rb`, the script requests the latest issues and then filters them based on a couple criteria. First, it removes issues reported by Mattermost staff, and then compares the current date with the last modified date. If it matches, it adds it to the issues to report and then sends that report to the user in individual messages to avoid exceeding the character limit for Mattermost messages.
+For each repository in each group the `main.rb`, the script requests the latest issues and then filters them based on a couple criteria. First, it removes issues reported by Mattermost staff, and then compares the current date with the last modified date. If it matches, it adds it to the issues to report and then sends that report to the user in individual messages to avoid exceeding the character limit for Mattermost messages.
 
 ## More Info
 
