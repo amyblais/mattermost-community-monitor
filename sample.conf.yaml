@@ -1,0 +1,15 @@
+---
+github_api:
+  url: https://api.github.com/
+  username: <GITHUB-USERNAME>
+  token: <GITHUB-TOKEN
+
+mattermost_api:
+  url: <MATTERMOST-SERVER>
+  username: <MATTERMOST-USERNAME
+  password: <MATTERMOST-PASSWORD>
+  recipient: <USERNAME-TO-NOTIFY>
+
+gitlab_api:
+  url: https://gitlab.com/api/v4/
+  token: <GITLAB-TOKEN>

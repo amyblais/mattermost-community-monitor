@@ -13,7 +13,7 @@ class MattermostApi
 		@base_uri = mattermost_url + 'api/v4/'
 		@login_id = login_id
 		@password = password
-		@tmp_file = '/tmp/' + Digest::MD5.hexdigest(__FILE__)
+		@tmp_file = './tmp/' + Digest::MD5.hexdigest("#{login_id}#{password}")
 
 		@options = {
 			headers: {
@@ -34,7 +34,7 @@ class MattermostApi
 				end
 			end
 		rescue Exception => e
-			pp e
+			raise e
 		end
 
 		if token.nil?
@@ -57,7 +57,6 @@ class MattermostApi
 	end
 
 	def send_direct_message(to_user, message)
-		# Find the user ID
 		to_id = get_user_by_name(to_user)['id']
 		from_id = self.get_current_user['id']
 

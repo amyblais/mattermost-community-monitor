@@ -58,9 +58,7 @@ class Gitlab
 
 		output_array = Array.new
 		repos_output.each do |repo|
-			
 			next if repo['issues'].count == 0
-
 
 			output = "### #{repo['repo']['name']} (#{repo['issues'].count}"
 
@@ -73,7 +71,7 @@ class Gitlab
 			count = 1
 			repo['issues'].each do |issue|
 				updated_at = RelativeTime.in_words(Time.parse(issue['updated_at']))
-				output += "#{count}. [#{issue['title']}](#{issue['html_url']}) - Last updated #{updated_at}\n"
+				output += "#{count}. [#{issue['title']}](#{issue['web_url']}) - Last updated #{updated_at}\n"
 				count+=1
 			end
 
