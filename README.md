@@ -13,7 +13,7 @@ Because this uses standard HTTP requests you can run it from any machine that's 
 Now you can run the script manually with `./main.rb` or by adding this crontab entry to run this every week on Wednesday:
 
 ```
-0 9 * * 2 /path/to/main.rb
+0 9 * * 3 /path/to/main.rb
 ```
 
 ## How it works
