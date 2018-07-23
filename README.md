@@ -6,7 +6,7 @@ Mattermost has an [official community monitoring process](https://docs.mattermos
 
 Because this uses standard HTTP requests you can run it from any machine that's connected to the Internet, inlcuding your workstation
 
-1. Check out this repositor
+1. Check out this repository
 2. Run `bundle` to install required Ruby gems
 3. Copy `sample.conf.yaml` to `conf.yaml` and add the correct configuration values
 
