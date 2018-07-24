@@ -25,6 +25,8 @@ mattermost_recipient = $config['mattermost_api']['recipient']
 
 # Only issues not created by Mattermost staff
 org_members = gh.get_org_members()
+
+# Main Github Repositories
 output_array = Array.new
 
 repos = ['mattermost/mattermost-server',
@@ -54,7 +56,9 @@ end
 
 output_array = gh.format_repo_output(repos_output)
 
-mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
+output_array.each do |message|
+	mm.send_direct_message(mattermost_recipient, message)
+end
 
 # These are for pull requests to the Android and iOS apps
 # Only find ones >30 days
@@ -80,7 +84,7 @@ repos.each do |repo|
 	repos_output.push({'repo' => repo_info, 'issues' => old_pulls})
 end
 output_array = gh.format_repo_output(repos_output)
-mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
+# mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
 
 # Stack Overflow
 so = StackOverflow.new
@@ -93,8 +97,11 @@ questions['items'].each do |question|
 end
 
 output_array = so.format_question_output(filtered_questions)
-mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
+output_array.each do |message|
+	mm.send_direct_message(mattermost_recipient, message)
+end
 
+# Gitlab
 gl = Gitlab.new($config['gitlab_api']['url'], $config['gitlab_api']['token'])
 
 gitlab_repos = ['gitlab-org/omnibus-gitlab?labels=Mattermost',
@@ -122,4 +129,51 @@ gitlab_repos.each do |repo|
 	gitlab_repos_output.push({'repo' => repo_info, 'issues' => filtered_issues})
 	output_array = gl.format_repo_output(gitlab_repos_output)
 	mm.send_direct_message(mattermost_recipient, output_array.join("\n"))
+end
+
+# Low Traffic Repos
+# Only show issues updated in the last week, otherwise hide them
+repos = ['mattermost/mattermost-redux',
+		 'mattermost/mattermost-developer-documentation',
+		 'mattermost/mattermost-integration-gitlab',
+		 'mattermost/mattermost-integration-giphy',
+		 'mattermost/mattermost-heroku',
+		 'mattermost/mattermost-interactive-post-demo',
+		 'mattermost/mattermost-developer-kit',
+		 'mattermost/mattermost-webrtc',
+		 'mattermost/mattermost-build',
+		 'mattermost/mattermost-plugin-profanity-filter',
+		 'mattermost/mattermost-plugin-memes',
+		 'mattermost/mattermost-plugin-autolink']
+
+repos_output = Array.new
+
+repos.each do |repo|
+	repo_info = gh.get_repo(repo)
+	issues = gh.get_issues(repo)
+
+	filtered_issues = Array.new
+	issues.each do |issue|
+		begin
+			if issue['user'].nil? || issue['user']['login'].nil?
+				next
+			end
+			
+			if !org_members.include? issue['user']['login']
+				# Only check for ones that have activity in the last week
+				if Time.now - Time.parse(issue['updated_at']) < (7 * 3600 * 24)
+					filtered_issues.push(issue)
+				end
+			end
+		rescue Exception => e
+			pp e
+		end
+	end
+	repos_output.push({'repo' => repo_info, 'issues' => filtered_issues})
+end
+
+output_array = gh.format_repo_output(repos_output)
+
+output_array.each do |message|
+	mm.send_direct_message(mattermost_recipient, message)
 end

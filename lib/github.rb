@@ -45,7 +45,7 @@ class Github
 	end
 
 	def get_repo(repo)
-		self.class.get("#{@base_uri}repos/#{repo}")
+		self.class.get("#{@base_uri}repos/#{repo}", @options)
 	end
 
 	def get_org_members(org='mattermost')
@@ -82,7 +82,7 @@ class Github
 
 			output_array.push output + "\n---"
 		end
-
+		
 		output_array
 	end
 end
